@@ -39,3 +39,27 @@ having (round (avg (s.quantity*p.price), 0)) < (          -- выводит то
     on s.product_id = p.product_id)
 order by average_income                                   -- сортирует среднюю выручку по возрастанию 
 ;
+
+
+-- Данные по выручке по каждому продавцу и дню недели
+with a as (                                                -- создает временную таблицу
+  select
+    concat(e.first_name, ' ', e.last_name) as seller,      -- объединяет две колонки с именем и фамилией в одну
+    to_char(s.sale_date, 'Day') as day_of_week,            -- выводит день недели
+    round (sum(s.quantity*p.price), 0) as income,          -- суммарная выручка (количество на цену) 
+    extract(isodow from s.sale_date) as day_num            -- номер дня недели пн-1, вт-2 и т.д.
+  from sales s
+  inner join employees e                                   -- соединяет с таблицей сотрудников 
+    on s.sales_person_id = e.employee_id 
+  left join products p                                     -- соединяет с таблицей товаров
+    on s.product_id = p.product_id
+  group by concat(e.first_name, ' ', e.last_name), to_char(s.sale_date, 'Day'), extract(isodow from s.sale_date)   -- группирует по каждому продавцу и по дню недели
+  )
+select                                                     -- выводит все необходимые колонки из временной таблицы 
+  seller,                         
+  day_of_week,
+  income
+from a 
+order by day_num,  seller                                  -- сортировка по порядковому номеру дня недели, по имени_фамилии
+;
+    

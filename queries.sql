@@ -62,4 +62,80 @@ select                                                     -- выводит в�
 from a 
 order by day_num,  seller                                  -- сортировка по порядковому номеру дня недели, по имени_фамилии
 ;
-    
+
+
+-- Количество покупателей по возростным группам
+with a as(
+  select *,             
+    case                                        -- начало создания строк
+	  when age between 16 and 25 then '16-25'   -- условие для каждой строки и название 
+	  when age between 26 and 40 then '26-40'   
+	  when age > 40 then '40+'                  
+    end as age_category                         -- конец создания строк
+  from customers
+  )
+select   
+  age_category,                                 
+  count(customer_id) as age_count               -- считает количество покупателей
+from a 
+group by age_category                           -- при группировке считает количество покупателей для каждой категории   
+order by age_category
+;
+
+
+-- Данные по количеству уникальных покупателей и выручке
+with a as (
+  select 
+    to_char(s.sale_date, 'YYYY-MM') as date,       -- выводит дату в виде  ГОД-МЕСЯЦ
+    round(sum(s.quantity*p.price), 0) as income,   -- считает сумму продаж
+    s.customer_id as customer_id
+  from sales as s
+  inner join products as p
+    on s.product_id = p.product_id
+  group by date, s.customer_id                     -- группирует продажи по дате и покупателю
+  )
+select 
+  date,
+  count(customer_id) as total_customers,           -- считает количество покупателей   
+  sum(income) as income
+from a  
+group by date                                      
+order by date  
+;
+
+
+-- Первая покупка покупателя пришлась на время проведения специальных акций (акционные товары отпускали со стоимостью равной 0)
+with a as (
+  select                                                        -- первая таблица содержит id покупателя и дату первой покупки акционного товара
+    s.customer_id as customer_id,
+    min(s.sale_date) as sale_date 
+  from sales s 
+  inner join products p
+    on s.product_id = p.product_id
+  where p.price = 0
+  group by s.customer_id
+  ), b as (
+  select                                                        -- вторая таблица выводит id покупателя, имя и фамилию покупателя и продавца
+    c.customer_id as customer_id,
+    concat(c.first_name, ' ', c.last_name) as customer,
+    concat(e.first_name, ' ', e.last_name) as seller,
+   min(s.sale_date) as sale_date 
+  from sales s
+  inner join employees e
+    on s.sales_person_id =  e.employee_id
+  inner join customers c
+    on s.customer_id = c.customer_id
+  inner join products p
+    on s.product_id = p.product_id 
+  group by  c.customer_id, concat(c.first_name, ' ', c.last_name), concat(e.first_name, ' ', e.last_name)
+  )
+select                                                         -- объединяет две таблицы и выводит необходимые поля 
+  b.customer as customer,
+  a.sale_date as sale_date,
+  b.seller as seller
+from a
+inner join b
+  on a.customer_id = b.customer_id
+and a.sale_date = b.sale_date
+order by a.customer_id
+;

@@ -9,7 +9,7 @@ from customers
 select
   concat(e.first_name, ' ', e.last_name) as seller,  -- объединяет две колонки с именем и фамилией в одну
   count (s.sales_id) as operations,                  -- считает количество проведенных сделок
-  round (sum (s.quantity*p.price), 0) as income      -- суммарная выручка (количество на цену)
+  floor(sum (s.quantity*p.price))  as income      -- суммарная выручка (количество на цену)
 from sales as s
 inner join employees as e                            -- соединяет  с таблицей сотрудников
   on s.sales_person_id = e.employee_id
@@ -24,14 +24,14 @@ limit 10                                             -- выводит перв�
 -- Информация о продавцах, чья средняя выручка за сделку меньше средней выручки за сделку по всем продавцам
 select 
   concat(e.first_name, ' ', e.last_name) as seller,       -- объединяет две колонки с именем и фамилией в одну
-  round (avg (s.quantity*p.price), 0) as average_income   -- средняя выручка продавца за сделку с округлением до целого
+  floor(avg (s.quantity*p.price)) as average_income   -- средняя выручка продавца за сделку с округлением до целого
 from sales as s
 inner join employees as e                                 -- соединяет с таблицей сотрудников
   on s.sales_person_id = e.employee_id 
 inner join products as p                                  -- соединяет с таблицей товаров
   on s.product_id = p.product_id
 group by seller                                           -- группирует по каждому продавцу для подсчета средней
-having (round (avg (s.quantity*p.price), 0)) < (          -- выводит только те, которые меньше чем (средняя выручка по всем продавцам)
+having floor(avg (s.quantity*p.price)) < (          -- выводит только те, которые меньше чем (средняя выручка по всем продавцам)
   select 
     round (avg (s.quantity*p.price), 0) as average_income -- соответственно в этом подзапросе средняя выручка по всем продавцам
   from sales as s
@@ -45,15 +45,15 @@ order by average_income                                   -- сортирует 
 with a as (                                                -- создает временную таблицу
   select
     concat(e.first_name, ' ', e.last_name) as seller,      -- объединяет две колонки с именем и фамилией в одну
-    to_char(s.sale_date, 'Day') as day_of_week,            -- выводит день недели
-    round (sum(s.quantity*p.price), 0) as income,          -- суммарная выручка (количество на цену) 
+    to_char(s.sale_date, 'day') as day_of_week,            -- выводит день недели
+    floor(sum(s.quantity*p.price)) as income,          -- суммарная выручка (количество на цену) 
     extract(isodow from s.sale_date) as day_num            -- номер дня недели пн-1, вт-2 и т.д.
   from sales s
   inner join employees e                                   -- соединяет с таблицей сотрудников 
     on s.sales_person_id = e.employee_id 
   left join products p                                     -- соединяет с таблицей товаров
     on s.product_id = p.product_id
-  group by concat(e.first_name, ' ', e.last_name), to_char(s.sale_date, 'Day'), extract(isodow from s.sale_date)   -- группирует по каждому продавцу и по дню недели
+  group by concat(e.first_name, ' ', e.last_name), to_char(s.sale_date, 'day'), extract(isodow from s.sale_date)   -- группирует по каждому продавцу и по дню недели
   )
 select                                                     -- выводит все необходимые колонки из временной таблицы 
   seller,                         
@@ -87,7 +87,7 @@ order by age_category
 with a as (
   select 
     to_char(s.sale_date, 'YYYY-MM') as date,       -- выводит дату в виде  ГОД-МЕСЯЦ
-    round(sum(s.quantity*p.price), 0) as income,   -- считает сумму продаж
+    round(sum(s.quantity*p.price), 2) as income,   -- считает сумму продаж
     s.customer_id as customer_id
   from sales as s
   inner join products as p
@@ -95,9 +95,9 @@ with a as (
   group by date, s.customer_id                     -- группирует продажи по дате и покупателю
   )
 select 
-  date,
+  date as selling_month,
   count(customer_id) as total_customers,           -- считает количество покупателей   
-  sum(income) as income
+  floor(sum(income)) as income
 from a  
 group by date                                      
 order by date  

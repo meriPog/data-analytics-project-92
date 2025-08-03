@@ -74,19 +74,19 @@ group by
 order by Extract(isodow from s.sale_date), seller;
 
 
-
 -- Количество покупателей по возростным группам
- select
-       case                                       
-            -- условие для каждой строки и название 
-            when age between 16 and 25 then '16-25'
-            when age between 26 and 40 then '26-40'
-            when age > 40 then '40+'
-        end as age_category,
-        Count(customer_id) as age_count
-    from customers
-    group by age_category
-    order by age_category;
+select
+    case
+        -- условие для каждой строки и название 
+        when age between 16 and 25 then '16-25'
+        when age between 26 and 40 then '26-40'
+        when age > 40 then '40+'
+    end as age_category,
+    Count(customer_id) as age_count
+from customers
+group by age_category
+order by age_category;
+
 
 -- Данные по количеству уникальных покупателей и выручке
 select

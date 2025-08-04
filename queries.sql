@@ -127,10 +127,9 @@ b as (
     inner join products as p
         on s.product_id = p.product_id
     group by
-        c.customer_id,
+        c.customer_id, s.sale_date,
         Concat(c.first_name, ' ', c.last_name),
-        Concat(e.first_name, ' ', e.last_name),
-        s.sale_date
+        Concat(e.first_name, ' ', e.last_name)
 )
 
 -- объединяет две таблицы и выводит необходимые поля 
@@ -142,4 +141,5 @@ from a
 inner join b
     on
         a.customer_id = b.customer_id
-        and a.sale_date = b.sale_date;
+        and a.sale_date = b.sale_date
+order by a.customer_id;

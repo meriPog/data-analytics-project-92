@@ -91,7 +91,7 @@ order by age_category;
 -- Данные по количеству уникальных покупателей и выручке
 select
     To_char(s.sale_date, 'YYYY-MM') as selling_month,
-    Count(s.customer_id) as total_customers,
+    Count(distinct On(s.customer_id)) as total_customers,
     Floor(Sum(s.quantity * p.price)) as income
 from sales as s
 inner join products as p
@@ -101,17 +101,46 @@ order by selling_month;
 
 
 -- Первая покупка покупателя пришлась на время проведения специальных акций
+with a as (
+    select
+        s.customer_id,
+        Min(s.sale_date) as sale_date
+    from sales as s
+    inner join products as p
+        on s.product_id = p.product_id
+    where p.price = 0
+    group by s.customer_id
+),
+
+b as (
+    -- вторая таблица выводит id покупателя, имя и фамилию покупателя и продавца
+    select
+        c.customer_id,
+        s.sale_date,
+        Concat(c.first_name, ' ', c.last_name) as customer,
+        Concat(e.first_name, ' ', e.last_name) as seller
+    from sales as s
+    inner join employees as e
+        on s.sales_person_id = e.employee_id
+    inner join customers as c
+        on s.customer_id = c.customer_id
+    inner join products as p
+        on s.product_id = p.product_id
+    group by
+        c.customer_id,
+        Concat(c.first_name, ' ', c.last_name),
+        Concat(e.first_name, ' ', e.last_name),
+        s.sale_date
+)
+
+-- объединяет две таблицы и выводит необходимые поля 
 select
-    Concat(c.first_name, ' ', c.last_name) as customer,
-    Min(s.sale_date) as sale_date,
-    Concat(e.first_name, ' ', e.last_name) as seller
-from sales as s
-inner join products as p
-    on s.product_id = p.product_id
-inner join employees as e
-    on s.sales_person_id = e.employee_id
-inner join customers as c
-    on s.customer_id = c.customer_id
-where p.price = 0
-group by s.customer_id, customer, seller
-order by s.customer_id;
+    b.customer,
+    a.sale_date,
+    b.seller
+from a
+inner join b
+    on
+        a.customer_id = b.customer_id
+        and a.sale_date = b.sale_date
+order by a.customer_id;

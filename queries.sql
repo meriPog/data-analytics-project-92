@@ -142,5 +142,4 @@ from a
 inner join b
     on
         a.customer_id = b.customer_id
-        and a.sale_date = b.sale_date
-order by a.customer_id;
+        and a.sale_date = b.sale_date;
